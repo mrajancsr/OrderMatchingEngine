@@ -41,7 +41,7 @@ int main()
     orders = engine.getOrdersByUser("neptune");
     displayOrders(orders);
 
-    std::cout << "displaying orders by secId ID2" << std::endl;
+    std::cout << "displaying orders by secID2" << std::endl;
     orders = engine.getOrdersBySecurityId("SecID2");
     displayOrders(orders);
 

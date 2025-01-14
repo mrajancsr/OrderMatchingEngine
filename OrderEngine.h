@@ -206,12 +206,12 @@ public:
         auto it = orders.find(oldOrder);
         if (it != orders.end())
         {
-            Order &order = const_cast<Order &>(*it);
-            order.setQty(newQty);
+            orders.erase(it);
+            orders.insert(oldOrder);
         }
     }
 
-    std::vector<Order> getOrdersBySecurityId(const std::string &secId) const
+    std::vector<Order> getOrdersBySecurityId(const std::string &secId) const override
     {
         std::vector<Order> orders;
         auto secit = m_ordersBySecurityId.find(secId);
