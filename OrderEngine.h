@@ -34,6 +34,7 @@ public:
     std::string side() const { return m_side; }
     std::string company() const { return m_company; }
     double price() const { return m_price; }
+    void setQty(const unsigned int &qty) { m_qty = qty; }
 
     bool operator==(const Order &otherOrder) const
     {
@@ -201,16 +202,11 @@ public:
         auto orderit = m_ordersByOrderId.find(orderId);
         if (orderit == m_ordersByOrderId.end())
             throw std::runtime_error("Order with OrderId " + orderId + " doesn't exist");
-        auto oldOrder = orderit->second;
-        cancelOrder(orderId);
-        addOrder(Order(oldOrder.orderId(),
-                       oldOrder.securityId(),
-                       oldOrder.side(),
-                       newQty,
-                       oldOrder.user(),
-                       oldOrder.company(),
-                       oldOrder.price()));
-    }
+        auto &oldOrder = orderit->second;
+        oldOrder.setQty(newQty);
+        auto &orders = m_ordersBySecurityId[oldOrder.securityId()];
+        auto it = orders.find(oldOrder);
+        }
 };
 
 template <typename T>
