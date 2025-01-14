@@ -59,6 +59,14 @@ namespace std
     };
 }
 
+struct Trade
+{
+    std::string buyOrderId;
+    std::string sellOrderId;
+    unsigned int matchedQuantity;
+    double price;
+};
+
 struct BuyOrderComparator
 {
     bool operator()(const Order &a, const Order &b) const
@@ -83,6 +91,34 @@ struct SellOrderComparator
     }
 };
 
+struct BuyOrderPriceComparator
+{
+    bool operator()(const Order &a, const Order &b) const
+    {
+        if (a.price() == b.price())
+        {
+            if (a.qty() == b.qty())
+                return a.orderId() < b.orderId();
+            return a.qty() > b.qty();
+        }
+        return a.price() > b.price();
+    }
+};
+
+struct SellOrderPriceComparator
+{
+    bool operator()(const Order &a, const Order &b) const
+    {
+        if (a.price() == b.price())
+        {
+            if (a.qty() == b.qty())
+                return a.orderId() < b.orderId();
+            return a.qty() < b.qty();
+        }
+        return a.price() < b.price();
+    }
+};
+
 class IOrderEngine
 {
 public:
@@ -101,6 +137,7 @@ public:
     virtual void modifyOrder(const std::string &orderId, const unsigned int &newQty) = 0;
     virtual std::vector<Order> getOrdersBySecurityId(const std::string &secId) const = 0;
     virtual void cancelAllOrdersForSecurity(const std::string &securityId) = 0;
+    virtual unsigned int matchOrdersWithPricePriority(const std::string &securityId) = 0;
 };
 
 class OrderEngine : public IOrderEngine
@@ -307,6 +344,37 @@ public:
         }
 
         return totalMatch;
+    }
+
+    // return total matched quantity based on price then size priority
+    unsigned int matchOrdersWithPricePriority(const std::string &securityId) override
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+
+        unsigned int totalMatch = 0;
+
+        auto it = m_ordersBySecurityId.find(securityId);
+        if (it == m_ordersBySecurityId.end())
+            return 0;
+        auto &orders = it->second;
+
+        std::multiset<Order, BuyOrderPriceComparator> buyOrders;
+        std::multiset<Order, SellOrderPriceComparator> sellOrders;
+
+        for (const auto &order : orders)
+        {
+            if (order.side() == "Buy")
+            {
+                buyOrders.insert(order);
+                continue;
+            }
+            if (order.side() == "Sell")
+                sellOrders.insert(order);
+        }
+
+        std::optional<Order> pendingBuy, pendingSell;
+
+        return 0;
     }
 
     // allows to modify existing order
