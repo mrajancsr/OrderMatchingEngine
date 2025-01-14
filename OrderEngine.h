@@ -59,6 +59,30 @@ namespace std
     };
 }
 
+struct BuyOrderComparator
+{
+    bool operator()(const Order &a, const Order &b) const
+    {
+        if (a.qty() == b.qty())
+        {
+            return a.orderId() < b.orderId(); // Tie-breaker by orderId
+        }
+        return a.qty() > b.qty(); // Descending order for Buy
+    }
+};
+
+struct SellOrderComparator
+{
+    bool operator()(const Order &a, const Order &b) const
+    {
+        if (a.qty() == b.qty())
+        {
+            return a.orderId() < b.orderId(); // Tie-breaker by orderId
+        }
+        return a.qty() < b.qty(); // Ascending order for Sell
+    }
+};
+
 class IOrderEngine
 {
 public:
@@ -76,6 +100,7 @@ public:
     virtual unsigned int getMatchingSizeForSecurity(const std::string &securityId) = 0;
     virtual void modifyOrder(const std::string &orderId, const unsigned int &newQty) = 0;
     virtual std::vector<Order> getOrdersBySecurityId(const std::string &secId) const = 0;
+    virtual void cancelAllOrdersForSecurity(const std::string &securityId) = 0;
 };
 
 class OrderEngine : public IOrderEngine
@@ -187,8 +212,47 @@ public:
         }
     }
 
+    void cancelAllOrdersForSecurity(const std::string &securityId) override
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        auto secit = m_ordersBySecurityId.find(securityId);
+        if (secit != m_ordersBySecurityId.end())
+        {
+            auto orders = secit->second;
+            for (auto &order : orders)
+                cancelOrder(order.orderId());
+        }
+    }
+
+    // return the total qty that can match for the security id
     unsigned int getMatchingSizeForSecurity(const std::string &securityId) override
     {
+        std::lock_guard<std::mutex> lock(m_mutex);
+
+        unsigned int totalMatch = 0;
+
+        // Retrieve orders for the given security ID
+        auto it = m_ordersBySecurityId.find(securityId);
+        if (it == m_ordersBySecurityId.end())
+        {
+            return 0; // No orders for this security ID
+        }
+
+        auto &orders = it->second;
+
+        // Separate Buy and Sell orders into multisets
+        std::multiset<Order, BuyOrderComparator> buyOrders;
+        std::multiset<Order, SellOrderComparator> sellOrders;
+
+        for (const auto &order : orders)
+        {
+            if (order.side() == "Buy")
+                buyOrders.insert(order);
+            else if (order.side() == "Sell")
+                sellOrders.insert(order);
+        }
+
+        // matching logic
         return 0;
     }
 
