@@ -1,0 +1,30 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug C++ (macOS)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/your_program_name", // Path to your executable
+            "args": [], // Command-line arguments for your program
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}", // Set the working directory
+            "environment": [], // Optional environment variables
+            "externalConsole": true, // Use macOS terminal for input/output
+            "MIMode": "lldb", // Use LLDB, the macOS debugger
+            "miDebuggerPath": "/usr/bin/lldb", // Path to the LLDB debugger
+            "setupCommands": [
+                {
+                    "description": "Enable pretty-printing for LLDB",
+                    "text": "settings set target.pretty-printing on",
+                    "ignoreFailures": true
+                }
+            ],
+            "preLaunchTask": "Build", // Matches the task defined in tasks.json
+            "internalConsoleOptions": "neverOpen"
+        }
+    ]
+}
