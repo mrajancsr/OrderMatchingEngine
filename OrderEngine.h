@@ -231,29 +231,82 @@ public:
 
         unsigned int totalMatch = 0;
 
-        // Retrieve orders for the given security ID
         auto it = m_ordersBySecurityId.find(securityId);
         if (it == m_ordersBySecurityId.end())
-        {
-            return 0; // No orders for this security ID
-        }
-
+            return 0;
         auto &orders = it->second;
 
-        // Separate Buy and Sell orders into multisets
         std::multiset<Order, BuyOrderComparator> buyOrders;
         std::multiset<Order, SellOrderComparator> sellOrders;
 
         for (const auto &order : orders)
         {
             if (order.side() == "Buy")
+            {
                 buyOrders.insert(order);
-            else if (order.side() == "Sell")
-                sellOrders.insert(order);
+                continue;
+            }
+            sellOrders.insert(order);
         }
 
-        // matching logic
-        return 0;
+        std::optional<Order> pendingBuy, pendingSell;
+
+        while (!buyOrders.empty() || pendingBuy || !sellOrders.empty() || pendingSell)
+        {
+            const Order *buyOrderPtr = nullptr;
+            const Order *sellOrderPtr = nullptr;
+
+            if (pendingBuy)
+                buyOrderPtr = &*pendingBuy;
+            else if (!buyOrders.empty())
+                buyOrderPtr = &*buyOrders.begin();
+
+            if (pendingSell)
+                sellOrderPtr = &*pendingSell;
+            else if (!sellOrders.empty())
+                sellOrderPtr = &*sellOrders.cbegin();
+
+            if (!buyOrderPtr || !sellOrderPtr)
+                break;
+
+            const auto &buyOrder = *buyOrderPtr;
+            const auto &sellOrder = *sellOrderPtr;
+
+            if (buyOrder.company() == sellOrder.company())
+            {
+                if (!pendingSell && !sellOrders.empty())
+                    sellOrders.erase(sellOrders.begin());
+                pendingSell.reset();
+                continue;
+            }
+
+            unsigned int matchQty = std::min(buyOrder.qty(), sellOrder.qty());
+            totalMatch += matchQty;
+
+            if (buyOrder.qty() > matchQty)
+            {
+                pendingBuy = Order(buyOrder.orderId(), buyOrder.securityId(), buyOrder.side(),
+                                   buyOrder.qty() - matchQty, buyOrder.user(), buyOrder.company());
+            }
+            else
+            {
+                pendingBuy.reset();
+                buyOrders.erase(buyOrders.begin());
+            }
+
+            if (sellOrder.qty() > matchQty)
+            {
+                pendingSell = Order(sellOrder.orderId(), sellOrder.securityId(), sellOrder.side(),
+                                    sellOrder.qty() - matchQty, sellOrder.user(), sellOrder.company());
+            }
+            else
+            {
+                pendingSell.reset();
+                sellOrders.erase(sellOrders.begin());
+            }
+        }
+
+        return totalMatch;
     }
 
     // allows to modify existing order
