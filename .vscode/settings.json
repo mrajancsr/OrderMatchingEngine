@@ -46,7 +46,8 @@
         "ratio": "cpp",
         "streambuf": "cpp",
         "variant": "cpp",
-        "algorithm": "cpp"
+        "algorithm": "cpp",
+        "iterator": "cpp"
     },
     "editor.formatOnSave": true
 }

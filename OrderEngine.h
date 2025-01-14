@@ -66,20 +66,16 @@ public:
     virtual void cancelOrder(const std::string &orderId) = 0;
     virtual std::optional<Order> getOrder(const std::string &orderId) const = 0;
     virtual void cancelOrderByUser(const std::string &userId) = 0;
-
     // get all orders for this particular user
     virtual std::vector<Order> getOrdersByUser(const std::string &userId) const = 0;
-
     // get all active orders in the engine
     virtual std::vector<Order> getAllOrders() const = 0;
-
     // remove all orders in engine for this security with qty >= minQty
     virtual void cancelOrdersForSecIdWithMinimumQty(const std::string &secId, unsigned int minQty) = 0;
-
     // return the total qty that can match for the security id
     virtual unsigned int getMatchingSizeForSecurity(const std::string &securityId) = 0;
-
     virtual void modifyOrder(const std::string &orderId, const unsigned int &newQty) = 0;
+    virtual std::vector<Order> getOrdersBySecurityId(const std::string &secId) const = 0;
 };
 
 class OrderEngine : public IOrderEngine
@@ -204,9 +200,28 @@ public:
             throw std::runtime_error("Order with OrderId " + orderId + " doesn't exist");
         auto &oldOrder = orderit->second;
         oldOrder.setQty(newQty);
+
+        // modify from the securityId
         auto &orders = m_ordersBySecurityId[oldOrder.securityId()];
         auto it = orders.find(oldOrder);
+        if (it != orders.end())
+        {
+            Order &order = const_cast<Order &>(*it);
+            order.setQty(newQty);
         }
+    }
+
+    std::vector<Order> getOrdersBySecurityId(const std::string &secId) const
+    {
+        std::vector<Order> orders;
+        auto secit = m_ordersBySecurityId.find(secId);
+        if (secit != m_ordersBySecurityId.end())
+        {
+            for (const auto &order : secit->second)
+                orders.push_back(order);
+        }
+        return orders;
+    }
 };
 
 template <typename T>

@@ -33,10 +33,17 @@ int main()
     allOrders = engine.getAllOrders();
     displayOrders(allOrders);
     std::cout << "cancelng orders with secid2" << std::endl;
-    std::cout << "modifying order for ID9" << std::endl;
+    std::cout << "modifying order for ID9 which is for neptune user" << std::endl;
     engine.modifyOrder("ID9", 100);
     allOrders = engine.getAllOrders();
     displayOrders(allOrders);
+    std::cout << "displaying orders by user neptune" << std::endl;
+    orders = engine.getOrdersByUser("neptune");
+    displayOrders(orders);
+
+    std::cout << "displaying orders by secId ID2" << std::endl;
+    orders = engine.getOrdersBySecurityId("SecID2");
+    displayOrders(orders);
 
     return 0;
 }
