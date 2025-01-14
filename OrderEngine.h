@@ -352,7 +352,7 @@ public:
     {
         std::lock_guard<std::mutex> lock(m_mutex);
 
-        unsigned int totalMatch = 0;
+        unsigned int totalMatchedQty = 0;
 
         auto it = m_ordersBySecurityId.find(securityId);
         if (it == m_ordersBySecurityId.end())
@@ -404,7 +404,11 @@ public:
                 continue;
             }
 
+            // no match is possible
+            if (buyOrder.price() < sellOrder.price())
+                break;
             unsigned int matchedQty = std::min(buyOrder.qty(), sellOrder.qty());
+            totalMatchedQty += matchedQty;
         }
 
         return 0;
