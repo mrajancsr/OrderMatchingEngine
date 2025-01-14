@@ -5,6 +5,7 @@
 #include <set>
 #include <unordered_map>
 #include <unordered_set>
+#include <queue>
 
 class Order
 {
@@ -358,21 +359,53 @@ public:
             return 0;
         auto &orders = it->second;
 
-        std::multiset<Order, BuyOrderPriceComparator> buyOrders;
-        std::multiset<Order, SellOrderPriceComparator> sellOrders;
+        std::priority_queue<Order, std::vector<Order>, BuyOrderPriceComparator> buyOrders;
+        std::priority_queue<Order, std::vector<Order>, SellOrderPriceComparator> sellOrders;
 
         for (const auto &order : orders)
         {
             if (order.side() == "Buy")
             {
-                buyOrders.insert(order);
+                buyOrders.push(order);
                 continue;
             }
             if (order.side() == "Sell")
-                sellOrders.insert(order);
+                sellOrders.push(order);
         }
 
         std::optional<Order> pendingBuy, pendingSell;
+
+        while (!buyOrders.empty() || pendingBuy || !sellOrders.empty() || pendingSell)
+        {
+            const Order *buyOrderPtr = nullptr;
+            const Order *sellOrderPtr = nullptr;
+
+            if (pendingBuy)
+                buyOrderPtr = &*pendingBuy;
+            else if (!buyOrders.empty())
+                buyOrderPtr = &buyOrders.top();
+
+            if (pendingSell)
+                sellOrderPtr = &*pendingSell;
+            else if (!sellOrders.empty())
+                sellOrderPtr = &sellOrders.top();
+
+            if (!buyOrderPtr || !sellOrderPtr)
+                break;
+
+            auto &buyOrder = *buyOrderPtr;
+            auto &sellOrder = *sellOrderPtr;
+
+            if (buyOrder.company() == sellOrder.company())
+            {
+                if (!pendingSell && !sellOrders.empty())
+                    sellOrders.pop();
+                pendingSell.reset();
+                continue;
+            }
+
+            unsigned int matchedQty = std::min(buyOrder.qty(), sellOrder.qty());
+        }
 
         return 0;
     }
