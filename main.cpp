@@ -15,35 +15,7 @@ int main()
     engine.addOrder(Order("ID8", "SecID1", OrderSide::SELL, 300, "neptune", "kernel", 66.7));
     engine.addOrder(Order("ID9", "SecID2", OrderSide::BUY, 500, "neptune", "kernel", 45.6));
 
-    auto allOrders = engine.getAllOrders();
-    std::cout << "There are a total of " << allOrders.size() << " Orders" << std::endl;
-    displayOrders(allOrders);
-    std::cout << std::endl;
-    std::cout << "Getting all Orders by raju" << std::endl;
-    auto orders = engine.getOrdersByUser("raju");
-    if (!orders.empty())
-        std::cout << "Total Orders by Raju: " << orders.size() << std::endl;
-    displayOrders(orders);
-    std::cout << "cancelling orders by raju" << std::endl;
-    engine.cancelOrderByUser("raju");
-    orders = engine.getOrdersByUser("raju");
-    if (!orders.empty())
-        std::cout << "Total Orders by Raju: " << orders.size() << std::endl;
-    else
-        std::cout << "No Orders by raju" << std::endl;
-    allOrders = engine.getAllOrders();
-    displayOrders(allOrders);
-    std::cout << "cancelng orders with secid2" << std::endl;
-    std::cout << "modifying order for ID9 which is for neptune user" << std::endl;
-    engine.modifyOrder("ID9", 100);
-    allOrders = engine.getAllOrders();
-    displayOrders(allOrders);
-    std::cout << "displaying orders by user neptune" << std::endl;
-    orders = engine.getOrdersByUser("neptune");
-    displayOrders(orders);
-
-    std::cout << "displaying orders by secID2" << std::endl;
-    orders = engine.getOrdersBySecurityId("SecID2");
+    auto orders = engine.getAllOrders();
     displayOrders(orders);
 
     return 0;

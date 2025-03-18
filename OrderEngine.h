@@ -19,50 +19,28 @@
  *
  */
 
+#include "Order.h"
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
 
-enum class OrderSide
+template <typename T>
+void displayOrders(const T &container)
 {
-    BUY,
-    SELL
-};
-
-class Order
-{
-private:
-    std::string m_orderId;
-    std::string m_securityId;
-    OrderSide m_side;
-    std::string m_user;
-    std::string m_company;
-    unsigned int m_qty;
-    double m_price;
-
-public:
-    Order(const std::string orderId,
-          const std::string secId,
-          OrderSide side,
-          const unsigned int qty,
-          const std::string user,
-          const std::string company,
-          const double price)
-        : m_orderId{std::move(orderId)}, m_securityId{std::move(secId)}, m_side{std::move(side)},
-          m_user{std::move(user)}, m_company{std::move(company)}, m_qty{qty}, m_price{price} {};
-
-    const std::string &OrderId() const { return m_orderId; }
-    const std::string &SecurityId() const { return m_securityId; }
-    const std::string &User() const { return m_user; }
-    const std::string &Company() const { return m_company; }
-    const OrderSide &Side() const { return m_side; }
-    const double GetQty() const { return m_qty; }
-};
+    for (const Order &order : container)
+    {
+        std::cout << "Order( " + order.OrderId() + ", ";
+        std::cout << order.SecurityId() + ", " + order.User();
+        std::cout << ", " << order.Qty() << ", " << order.Company() << ", " << order.Price() << " ) " << std::endl;
+    }
+}
 
 class IOrderEngine
 {
 public:
     virtual void addOrder(const Order &order) = 0;
+    virtual std::optional<Order> getOrder(const std::string &orderId) const = 0;
+    virtual std::vector<Order> getAllOrders() const = 0;
 };
 
 class OrderEngine final : public IOrderEngine
@@ -80,6 +58,22 @@ public:
             throw ::std::runtime_error("Duplicate order detected: " + order.OrderId());
         m_ordersBySecurityId[order.SecurityId()].insert(order);
         m_ordersByUserId[order.User()].insert(order.OrderId());
+    }
+
+    std::optional<Order> getOrder(const std::string &orderId) const override
+    {
+        auto itOrder = m_ordersByOrderId.find(orderId);
+        if (itOrder != m_ordersByOrderId.end())
+            return itOrder->second;
+        return std::nullopt;
+    }
+
+    std::vector<Order> getAllOrders() const override
+    {
+        std::vector<Order> orders;
+        for (const auto &[orderid, order] : m_ordersByOrderId)
+            orders.push_back(order);
+        return orders;
     }
 };
 
