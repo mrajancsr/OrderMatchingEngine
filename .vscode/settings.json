@@ -47,7 +47,8 @@
         "streambuf": "cpp",
         "variant": "cpp",
         "algorithm": "cpp",
-        "iterator": "cpp"
+        "iterator": "cpp",
+        "unordered_set": "cpp"
     },
     "editor.formatOnSave": true
 }
