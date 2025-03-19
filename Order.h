@@ -65,7 +65,7 @@ public:
 
     const std::string &OrderId() const { return m_orderId; }
     const std::string &SecurityId() const { return m_securityId; }
-    const std::string &User() const { return m_user; }
+    const std::string &UserId() const { return m_user; }
     const std::string &Company() const { return m_company; }
     const OrderSide &Side() const { return m_side; }
     const double Qty() const { return m_qty; }
@@ -75,7 +75,7 @@ public:
     {
         return (this->m_orderId == otherOrder.OrderId() &&
                 (this->SecurityId() == otherOrder.SecurityId()) &&
-                (this->User() == otherOrder.User()) &&
+                (this->UserId() == otherOrder.UserId()) &&
                 (this->Side() == otherOrder.Side()));
     }
 };
@@ -89,7 +89,7 @@ namespace std
         {
             return std::hash<std::string>()(order.OrderId()) ^
                    (std::hash<std::string>()(order.SecurityId()) << 1) ^
-                   (std::hash<std::string>()(order.User()) << 2);
+                   (std::hash<std::string>()(order.UserId()) << 2);
         }
     };
 }

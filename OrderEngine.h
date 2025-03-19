@@ -39,9 +39,10 @@ class IOrderEngine
 {
 public:
     virtual void addOrder(Order order) = 0;
+    virtual void cancelOrder(const std::string &orderId) = 0;
     virtual std::optional<Order> getOrder(const std::string &orderId) const = 0;
     virtual std::vector<Order> getAllOrders() const = 0;
-    virtual std::vector<Order> getOrdersBySecurityId(const std::string &secId) const = 0;
+    virtual const std::unordered_set<Order> &getOrdersBySecurityId(const std::string &secId) const = 0;
 };
 
 class OrderEngine final : public IOrderEngine
@@ -59,11 +60,43 @@ public:
             throw ::std::runtime_error("Duplicate order detected: " + it->first);
 
         const Order &insertedOrder = it->second;
-        const std::string userId = insertedOrder.User();
+        const std::string userId = insertedOrder.UserId();
         const std::string orderId = insertedOrder.OrderId();
 
         m_ordersBySecurityId[insertedOrder.SecurityId()].insert(std::move(insertedOrder));
         m_ordersByUserId[userId].insert(orderId);
+    }
+
+    void cancelOrder(const std::string &orderId) override
+    {
+        auto itOrder = m_ordersByOrderId.find(orderId);
+        if (itOrder == m_ordersByOrderId.end())
+            return; // Order doesn't exist, do nothing
+
+        const std::string secId = itOrder->second.SecurityId();
+        const std::string userId = itOrder->second.UserId();
+
+        // remove from m_ordersBySecurityId
+        auto itSec = m_ordersBySecurityId.find(secId);
+        if (itSec != m_ordersBySecurityId.end())
+        {
+            itSec->second.erase(itOrder->second);
+            if (itSec->second.empty())
+                m_ordersBySecurityId.erase(itSec);
+        }
+
+        // erase from m_ordersByUserId
+        auto itUser = m_ordersByUserId.find(userId);
+        if (itUser != m_ordersByUserId.end())
+        {
+            itUser->second.erase(orderId);
+            if (itUser->second.empty())
+                m_ordersByUserId.erase(userId);
+        }
+        // finally remove from m_ordersByOrderId
+        m_ordersByOrderId.erase(itOrder);
+
+        std::cout << "Order cancelled for orderId: " << orderId << std::endl;
     }
 
     std::optional<Order> getOrder(const std::string &orderId) const override
@@ -83,17 +116,11 @@ public:
         return orders; // NRVO since its a named local variable
     }
 
-    virtual std::vector<Order> getOrdersBySecurityId(const std::string &secId) const override
+    virtual const std::unordered_set<Order> &getOrdersBySecurityId(const std::string &secId) const override
     {
-        std::vector<Order> orders;
+        static const std::unordered_set<Order> emptySet;
         auto itOrder = m_ordersBySecurityId.find(secId);
-        if (itOrder != m_ordersBySecurityId.end())
-        {
-            orders.reserve(itOrder->second.size());
-            for (const auto &order : itOrder->second)
-                orders.push_back(order);
-        }
-        return orders;
+        return (itOrder != m_ordersBySecurityId.end()) ? itOrder->second : emptySet;
     }
 };
 
