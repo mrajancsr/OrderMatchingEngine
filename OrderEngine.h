@@ -79,7 +79,7 @@ public:
         orders.reserve(m_ordersByOrderId.size());
         for (const auto &[orderid, order] : m_ordersByOrderId)
             orders.push_back(order);
-        return orders;
+        return orders; // NRVO since its a named local variable
     }
 };
 
