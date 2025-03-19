@@ -41,6 +41,7 @@ public:
     virtual void addOrder(Order order) = 0;
     virtual std::optional<Order> getOrder(const std::string &orderId) const = 0;
     virtual std::vector<Order> getAllOrders() const = 0;
+    virtual std::vector<Order> getOrdersBySecurityId(const std::string &secId) const = 0;
 };
 
 class OrderEngine final : public IOrderEngine
@@ -80,6 +81,19 @@ public:
         for (const auto &[orderid, order] : m_ordersByOrderId)
             orders.push_back(order);
         return orders; // NRVO since its a named local variable
+    }
+
+    virtual std::vector<Order> getOrdersBySecurityId(const std::string &secId) const override
+    {
+        std::vector<Order> orders;
+        auto itOrder = m_ordersBySecurityId.find(secId);
+        if (itOrder != m_ordersBySecurityId.end())
+        {
+            orders.reserve(itOrder->second.size());
+            for (const auto &order : itOrder->second)
+                orders.push_back(order);
+        }
+        return orders;
     }
 };
 
