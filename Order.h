@@ -31,6 +31,38 @@ public:
         : m_orderId{std::move(orderId)}, m_securityId{std::move(secId)}, m_side{std::move(side)},
           m_user{std::move(user)}, m_company{std::move(company)}, m_qty{qty}, m_price{price} {};
 
+    // copy structure (default)
+    Order(const Order &) = default;
+
+    // Move constructor
+    Order(Order &&other) noexcept
+        : m_orderId{std::move(other.m_orderId)},
+          m_securityId{std::move(other.m_securityId)},
+          m_side{std::move(other.m_side)},
+          m_user{std::move(other.m_user)},
+          m_company{std::move(other.m_company)},
+          m_qty{std::move(other.m_qty)},
+          m_price{std::move(other.m_price)} {}
+
+    // copy assignment (default)
+    Order &operator=(const Order &) = default;
+
+    // Move assignment
+    Order &operator=(Order &&other) noexcept
+    {
+        if (this != &other)
+        {
+            m_orderId = std::move(other.m_orderId);
+            m_securityId = std::move(other.m_securityId);
+            m_side = std::move(other.m_side);
+            m_user = std::move(other.m_user);
+            m_company = std::move(other.m_company);
+            m_qty = std::move(other.m_qty);
+            m_price = std::move(other.m_price);
+        }
+        return *this;
+    }
+
     const std::string &OrderId() const { return m_orderId; }
     const std::string &SecurityId() const { return m_securityId; }
     const std::string &User() const { return m_user; }

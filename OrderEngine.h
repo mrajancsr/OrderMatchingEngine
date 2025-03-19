@@ -38,7 +38,7 @@ void displayOrders(const T &container)
 class IOrderEngine
 {
 public:
-    virtual void addOrder(const Order &order) = 0;
+    virtual void addOrder(Order order) = 0;
     virtual std::optional<Order> getOrder(const std::string &orderId) const = 0;
     virtual std::vector<Order> getAllOrders() const = 0;
 };
@@ -51,13 +51,18 @@ private:
     std::unordered_map<std::string, std::unordered_set<std::string>> m_ordersByUserId;
 
 public:
-    void addOrder(const Order &order) override
+    void addOrder(Order order) override
     {
-        auto [it, inserted] = m_ordersByOrderId.emplace(order.OrderId(), order);
+        auto [it, inserted] = m_ordersByOrderId.emplace(order.OrderId(), std::move(order));
         if (!inserted)
-            throw ::std::runtime_error("Duplicate order detected: " + order.OrderId());
-        m_ordersBySecurityId[order.SecurityId()].insert(order);
-        m_ordersByUserId[order.User()].insert(order.OrderId());
+            throw ::std::runtime_error("Duplicate order detected: " + it->first);
+
+        const Order &insertedOrder = it->second;
+        const std::string userId = insertedOrder.User();
+        const std::string orderId = insertedOrder.OrderId();
+
+        m_ordersBySecurityId[insertedOrder.SecurityId()].insert(std::move(insertedOrder));
+        m_ordersByUserId[userId].insert(orderId);
     }
 
     std::optional<Order> getOrder(const std::string &orderId) const override
