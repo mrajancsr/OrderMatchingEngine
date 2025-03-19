@@ -76,6 +76,7 @@ public:
     std::vector<Order> getAllOrders() const override
     {
         std::vector<Order> orders;
+        orders.reserve(m_ordersByOrderId.size());
         for (const auto &[orderid, order] : m_ordersByOrderId)
             orders.push_back(order);
         return orders;
