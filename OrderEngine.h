@@ -107,9 +107,23 @@ public:
         if (userIt == m_ordersByUserId.end())
             return;
 
-        std::vector<std::string> orderIds(userIt->second.begin(), userIt->second.end());
-        for (const auto &orderId : orderIds)
-            cancelOrder(orderId);
+        for (const auto &orderId : userIt->second)
+        {
+            auto orderIt = m_ordersByOrderId.find(orderId);
+            if (orderIt != m_ordersByOrderId.end())
+            {
+                const std::string &secId = orderIt->second.SecurityId();
+                auto secIt = m_ordersBySecurityId.find(secId);
+                if (secIt != m_ordersBySecurityId.end())
+                {
+                    secIt->second.erase(orderIt->second);
+                    if (secIt->second.empty())
+                        m_ordersBySecurityId.erase(secIt);
+                }
+                m_ordersByOrderId.erase(orderIt);
+            }
+        }
+        m_ordersByUserId.erase(userIt);
     }
 
     virtual void cancelAllOrdersForSecurity(const std::string &securityId) override
@@ -118,12 +132,21 @@ public:
         if (secIt == m_ordersBySecurityId.end())
             return;
 
-        std::vector<std::string> orderIds;
-        orderIds.reserve(secIt->second.size());
         for (const auto &order : secIt->second)
-            orderIds.push_back(order.OrderId());
-        for (const auto &orderId : orderIds)
-            cancelOrder(orderId);
+        {
+            const auto &orderId = order.OrderId();
+            const auto &userId = order.UserId();
+
+            m_ordersByOrderId.erase(orderId);
+            auto userIt = m_ordersByUserId.find(userId);
+            if (userIt != m_ordersByUserId.end())
+            {
+                userIt->second.erase(orderId);
+                if (userIt->second.empty())
+                    m_ordersByUserId.erase(userIt);
+            }
+        }
+        m_ordersBySecurityId.erase(secIt);
     }
 
     std::optional<Order> getOrder(const std::string &orderId) const override
