@@ -19,6 +19,7 @@ private:
     std::string m_company;
     unsigned int m_qty;
     double m_price;
+    std::string orderInString;
 
 public:
     Order(const std::string orderId,

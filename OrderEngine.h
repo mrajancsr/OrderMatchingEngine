@@ -30,7 +30,7 @@ void displayOrders(const T &container)
     for (const Order &order : container)
     {
         std::cout << "Order( " + order.OrderId() + ", ";
-        std::cout << order.SecurityId() + ", " + order.User();
+        std::cout << order.SecurityId() + ", " + order.UserId();
         std::cout << ", " << order.Qty() << ", " << order.Company() << ", " << order.Price() << " ) " << std::endl;
     }
 }
@@ -40,6 +40,8 @@ class IOrderEngine
 public:
     virtual void addOrder(Order order) = 0;
     virtual void cancelOrder(const std::string &orderId) = 0;
+    virtual void cancelOrderByUser(const std::string &userId) = 0;
+    virtual void cancelAllOrdersForSecurity(const std::string &securityId) = 0;
     virtual std::optional<Order> getOrder(const std::string &orderId) const = 0;
     virtual std::vector<Order> getAllOrders() const = 0;
     virtual const std::unordered_set<Order> &getOrdersBySecurityId(const std::string &secId) const = 0;
@@ -97,6 +99,31 @@ public:
         m_ordersByOrderId.erase(itOrder);
 
         std::cout << "Order cancelled for orderId: " << orderId << std::endl;
+    }
+
+    virtual void cancelOrderByUser(const std::string &userId) override
+    {
+        auto userIt = m_ordersByUserId.find(userId);
+        if (userIt == m_ordersByUserId.end())
+            return;
+
+        std::vector<std::string> orderIds(userIt->second.begin(), userIt->second.end());
+        for (const auto &orderId : orderIds)
+            cancelOrder(orderId);
+    }
+
+    virtual void cancelAllOrdersForSecurity(const std::string &securityId) override
+    {
+        auto secIt = m_ordersBySecurityId.find(securityId);
+        if (secIt == m_ordersBySecurityId.end())
+            return;
+
+        std::vector<std::string> orderIds;
+        orderIds.reserve(secIt->second.size());
+        for (const auto &order : secIt->second)
+            orderIds.push_back(order.OrderId());
+        for (const auto &orderId : orderIds)
+            cancelOrder(orderId);
     }
 
     std::optional<Order> getOrder(const std::string &orderId) const override
