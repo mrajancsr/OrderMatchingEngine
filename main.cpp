@@ -5,20 +5,29 @@ int main()
 {
     OrderEngine engine;
 
-    engine.addOrder(Order("ID1", "SecID1", OrderSide::BUY, 100, "raju", "boa", 50));
-    engine.addOrder(Order("ID2", "SecID1", OrderSide::SELL, 1000, "raju", "boa", 30));
-    // engine.addOrder(Order("ID3", "SecID2", OrderSide::BUY, 500, "prema", "rush", 10));
-    // engine.addOrder(Order("ID4", "SecID3", OrderSide::BUY, 600, "prema", "rush", 55.5));
-    // engine.addOrder(Order("ID5", "SecID4", OrderSide::BUY, 300, "raju", "boa", 56.0));
-    //  engine.addOrder(Order("ID6", "SecID2", OrderSide::SELL, 400, "neptune", "kernel"));
-    //  engine.addOrder(Order("ID7", "SecID3", OrderSide::SELL, 500, "neptune", "kernel"));
-    // engine.addOrder(Order("ID8", "SecID1", OrderSide::SELL, 300, "neptune", "kernel", 66.7));
-    // engine.addOrder(Order("ID9", "SecID2", OrderSide::BUY, 500, "neptune", "kernel", 45.6));
+    engine.addOrder(Order("ID1", "GOLD", OrderSide::BUY, 100, "alice", "firmA", 1850.5));
+    engine.addOrder(Order("ID2", "GOLD", OrderSide::SELL, 50, "bob", "firmB", 1850.5));
+    engine.addOrder(Order("ID3", "Corn", OrderSide::SELL, 100, "bob", "firmB", 2000.0));
+    engine.addOrder(Order("ID4", "WTI", OrderSide::BUY, 10, "alice", "firmA", 550));
+    engine.addOrder(Order("ID5", "WTI", OrderSide::BUY, 30, "alice", "firmA", 548));
+    engine.addOrder(Order("ID6", "GOLD", OrderSide::BUY, 100, "alice", "firmA", 1851.3));
 
-    const auto orders = engine.getAllOrders();
+    // get all orders
+    std::cout << "getting all orders entered" << std::endl;
+    const auto &allOrders = engine.getAllOrders();
+    displayOrders(allOrders);
+
+    std::cout << "Getting all Orders associated with GOLD" << std::endl;
+    const auto &orders = engine.getOrdersBySecurityId("GOLD");
     displayOrders(orders);
 
-    
+    std::cout << "Alice wants to cancel orderId 1: cancelling order..." << std::endl;
+    engine.cancelOrder("ID1");
+    std::cout << "After cancel:\n";
+    const auto &after = engine.getOrdersBySecurityId("GOLD");
+    displayOrders(after);
 
-    return 0;
+    std::cout << "Getting all Orders associated with Alice" << std::endl;
+    const auto &aliceOrders = engine.getOrdersByUserId("alice");
+    displayOrders(aliceOrders);
 }

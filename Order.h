@@ -2,6 +2,7 @@
 #define ORDER_H
 
 #include <string>
+#include <ostream>
 
 enum class OrderSide
 {
@@ -64,6 +65,9 @@ public:
         return *this;
     }
 
+    // Overload the << operator
+    friend std::ostream &operator<<(std::ostream &os, const Order &order);
+
     const std::string &OrderId() const { return m_orderId; }
     const std::string &SecurityId() const { return m_securityId; }
     const std::string &UserId() const { return m_user; }
@@ -71,7 +75,7 @@ public:
     const OrderSide &Side() const { return m_side; }
     const double Qty() const { return m_qty; }
     const double Price() const { return m_price; }
-    void SetQty(const unsigned int newQty) { m_qty = newQty; }
+    void SetQty(const unsigned int &newQty) { m_qty = newQty; }
 
     bool operator==(const Order &otherOrder) const
     {
@@ -81,6 +85,14 @@ public:
                 (this->Side() == otherOrder.Side()));
     }
 };
+
+std::ostream &operator<<(std::ostream &os, const Order &order)
+{
+    os << "Order(" << order.m_orderId << ", " << order.m_securityId << ", ";
+    os << (order.m_side == OrderSide::BUY ? "BUY" : "SELL") << ", ";
+    os << order.m_user << ", " << order.m_company << ", " << order.m_qty << ", " << order.m_price << ")";
+    return os;
+}
 
 namespace std
 {
@@ -95,5 +107,29 @@ namespace std
         }
     };
 }
+
+struct BuyOrderComparator
+{
+    bool operator()(const Order &a, const Order &b) const
+    {
+        if (a.Qty() == b.Qty())
+        {
+            return a.OrderId() < b.OrderId(); // Tie-breaker by orderId
+        }
+        return a.Qty() > b.Qty(); // Descending order for Buy
+    }
+};
+
+struct SellOrderComparator
+{
+    bool operator()(const Order &a, const Order &b) const
+    {
+        if (a.Qty() == b.Qty())
+        {
+            return a.OrderId() < b.OrderId(); // Tie-breaker by orderId
+        }
+        return a.Qty() < b.Qty(); // Ascending order for Sell
+    }
+};
 
 #endif
