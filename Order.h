@@ -71,6 +71,7 @@ public:
     const OrderSide &Side() const { return m_side; }
     const double Qty() const { return m_qty; }
     const double Price() const { return m_price; }
+    void SetQty(const unsigned int newQty) { m_qty = newQty; }
 
     bool operator==(const Order &otherOrder) const
     {

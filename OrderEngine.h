@@ -45,6 +45,7 @@ public:
     virtual std::optional<Order> getOrder(const std::string &orderId) const = 0;
     virtual std::vector<Order> getAllOrders() const = 0;
     virtual const std::unordered_set<Order> &getOrdersBySecurityId(const std::string &secId) const = 0;
+    virtual bool modifyOrder(const std::string &orderId, const unsigned int &newQty) = 0;
 };
 
 class OrderEngine final : public IOrderEngine
@@ -171,6 +172,25 @@ public:
         static const std::unordered_set<Order> emptySet;
         auto itOrder = m_ordersBySecurityId.find(secId);
         return (itOrder != m_ordersBySecurityId.end()) ? itOrder->second : emptySet;
+    }
+
+    bool modifyOrder(const std::string &orderId, const unsigned int &newQty) override
+    {
+        auto orderIt = m_ordersByOrderId.find(orderId);
+        if (orderIt == m_ordersByOrderId.end())
+            return false;
+
+        // modify from m_ordersBySecurityId
+        auto secIt = m_ordersBySecurityId.find(orderIt->second.SecurityId());
+
+        if (secIt == m_ordersBySecurityId.end())
+            return false;
+
+        auto &orders = secIt->second;
+        orders.erase(orderIt->second);
+        orderIt->second.SetQty(newQty);
+        orders.insert(orderIt->second);
+        return true;
     }
 };
 
