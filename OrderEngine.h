@@ -42,14 +42,12 @@ public:
     virtual void cancelOrder(const std::string &orderId) = 0;
     virtual void cancelOrderByUser(const std::string &userId) = 0;
     virtual void cancelAllOrdersForSecurity(const std::string &securityId) = 0;
-    virtual bool modifyOrder(const std::string &orderId, const unsigned int &newQty) = 0;
     virtual bool cancelOrdersForSecIdWithMinimumQty(const std::string &secId, unsigned int minQty) = 0;
-    virtual std::optional<Order> getOrder(const std::string &orderId) const = 0;
+    virtual bool modifyOrder(const std::string &orderId, const unsigned int &newQty) = 0;
     virtual std::vector<Order> getAllOrders() const = 0;
     virtual const std::unordered_set<Order> &getOrdersBySecurityId(const std::string &secId) const = 0;
     virtual const std::vector<Order> getOrdersByUserId(const std::string &userId) const = 0;
-    virtual unsigned int getMatchingSizeForSecurity(const std::string &securityId) = 0;
-    virtual void test() = 0;
+    virtual std::optional<Order> getOrder(const std::string &orderId) const = 0;
 };
 
 class OrderEngine final : public IOrderEngine
@@ -153,46 +151,6 @@ public:
         m_ordersBySecurityId.erase(secIt);
     }
 
-    std::optional<Order> getOrder(const std::string &orderId) const override
-    {
-        auto itOrder = m_ordersByOrderId.find(orderId);
-        if (itOrder != m_ordersByOrderId.end())
-            return itOrder->second;
-        return std::nullopt;
-    }
-
-    std::vector<Order> getAllOrders() const override
-    {
-        std::vector<Order> orders;
-        orders.reserve(m_ordersByOrderId.size());
-        for (const auto &[orderid, order] : m_ordersByOrderId)
-            orders.push_back(order);
-        return orders; // NRVO since its a named local variable
-    }
-
-    const std::unordered_set<Order> &getOrdersBySecurityId(const std::string &secId) const override
-    {
-        static const std::unordered_set<Order> emptySet;
-        auto itOrder = m_ordersBySecurityId.find(secId);
-        return (itOrder != m_ordersBySecurityId.end()) ? itOrder->second : emptySet;
-    }
-
-    const std::vector<Order> getOrdersByUserId(const std::string &userId) const override
-    {
-        std::vector<Order> orders;
-        auto userIt = m_ordersByUserId.find(userId);
-        if (userIt == m_ordersByUserId.end())
-            return orders;
-        orders.reserve(userIt->second.size());
-        for (const auto &orderId : userIt->second)
-        {
-            const auto &optionalOrder = getOrder(orderId);
-            if (optionalOrder)
-                orders.push_back(*optionalOrder);
-        }
-        return orders;
-    }
-
     bool modifyOrder(const std::string &orderId, const unsigned int &newQty) override
     {
         auto orderIt = m_ordersByOrderId.find(orderId);
@@ -236,9 +194,44 @@ public:
         return orderCancelled;
     }
 
-    unsigned int getMatchingSizeForSecurity(const std::string &securityId) override
+    std::optional<Order> getOrder(const std::string &orderId) const override
     {
-        return 0;
+        auto itOrder = m_ordersByOrderId.find(orderId);
+        if (itOrder != m_ordersByOrderId.end())
+            return itOrder->second;
+        return std::nullopt;
+    }
+
+    std::vector<Order> getAllOrders() const override
+    {
+        std::vector<Order> orders;
+        orders.reserve(m_ordersByOrderId.size());
+        for (const auto &[orderid, order] : m_ordersByOrderId)
+            orders.push_back(order);
+        return orders; // NRVO since its a named local variable
+    }
+
+    const std::unordered_set<Order> &getOrdersBySecurityId(const std::string &secId) const override
+    {
+        static const std::unordered_set<Order> emptySet;
+        auto itOrder = m_ordersBySecurityId.find(secId);
+        return (itOrder != m_ordersBySecurityId.end()) ? itOrder->second : emptySet;
+    }
+
+    const std::vector<Order> getOrdersByUserId(const std::string &userId) const override
+    {
+        std::vector<Order> orders;
+        auto userIt = m_ordersByUserId.find(userId);
+        if (userIt == m_ordersByUserId.end())
+            return orders;
+        orders.reserve(userIt->second.size());
+        for (const auto &orderId : userIt->second)
+        {
+            const auto &optionalOrder = getOrder(orderId);
+            if (optionalOrder)
+                orders.push_back(*optionalOrder);
+        }
+        return orders;
     }
 };
 
