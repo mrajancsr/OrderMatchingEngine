@@ -48,6 +48,7 @@ public:
     virtual const std::unordered_set<Order> &getOrdersBySecurityId(const std::string &secId) const = 0;
     virtual const std::vector<Order> getOrdersByUserId(const std::string &userId) const = 0;
     virtual std::optional<Order> getOrder(const std::string &orderId) const = 0;
+    virtual unsigned int getMatchingSizeForSecurity(const std::string &secId) = 0;
 };
 
 class OrderEngine final : public IOrderEngine
@@ -61,7 +62,7 @@ private:
 public:
     void addOrder(Order order) override
     {
-        auto [it, inserted] = m_ordersByOrderId.emplace(order.OrderId(), std::move(order));
+        const auto &[it, inserted] = m_ordersByOrderId.emplace(order.OrderId(), std::move(order));
         if (!inserted)
             throw std::runtime_error("Duplicate order detected: " + it->first);
 
@@ -77,8 +78,8 @@ public:
         if (itOrder == m_ordersByOrderId.end())
             return; // Order doesn't exist, do nothing
 
-        const std::string secId = itOrder->second.SecurityId();
-        const std::string userId = itOrder->second.UserId();
+        const std::string &secId = itOrder->second.SecurityId();
+        const std::string &userId = itOrder->second.UserId();
 
         // remove from m_ordersBySecurityId
         auto itSec = m_ordersBySecurityId.find(secId);
@@ -95,7 +96,7 @@ public:
         {
             itUser->second.erase(orderId);
             if (itUser->second.empty())
-                m_ordersByUserId.erase(userId);
+                m_ordersByUserId.erase(itUser);
         }
         // finally remove from m_ordersByOrderId
         m_ordersByOrderId.erase(itOrder);
@@ -109,6 +110,7 @@ public:
         if (userIt == m_ordersByUserId.end())
             return;
 
+        // cancel each order associated with userId
         for (const auto &orderId : userIt->second)
         {
             auto orderIt = m_ordersByOrderId.find(orderId);
@@ -232,6 +234,70 @@ public:
                 orders.push_back(*optionalOrder);
         }
         return orders;
+    }
+
+    unsigned int getMatchingSizeForSecurity(const std::string &secId) override
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+
+        auto secIt = m_ordersBySecurityId.find(secId);
+
+        if (secIt == m_ordersBySecurityId.end())
+            return 0;
+
+        std::vector<Order> buys, sells;
+
+        for (const auto &order : secIt->second)
+        {
+            if (order.Side() == OrderSide::BUY)
+                buys.push_back(order);
+            else if (order.Side() == OrderSide::SELL)
+                sells.push_back(order);
+        }
+
+        std::sort(buys.begin(), buys.end(), [](const Order &a, const Order &b)
+                  { return a.Price() > b.Price(); });
+
+        std::sort(sells.begin(), sells.end(), [](const Order &a, const Order &b)
+                  { return a.Price() < b.Price(); });
+
+        unsigned int matchedQty = 0;
+        size_t i = 0, j = 0;
+
+        while (i < buys.size() && j < sells.size())
+        {
+            Order &buy = buys[i];
+            Order &sell = sells[j];
+
+            if (buy.Company() == sell.Company())
+            {
+                // skip matching same company name
+                // advance to which ever side is more likely match
+                if ((i + 1 < buys.size() && buys[i + 1].Company() != sell.Company()) || j + 1 == sells.size())
+                    ++i;
+                else
+                    ++j;
+                continue;
+            }
+
+            // cant match
+            /*
+            if (buy.Price() < sell.Price())
+            {
+                ++i;
+                continue;
+            }*/
+            unsigned int qty = std::min(buy.Qty(), sell.Qty());
+            matchedQty += qty;
+            buy.SetQty(buy.Qty() - qty);
+            sell.SetQty(sell.Qty() - qty);
+
+            if (buy.Qty() == 0)
+                ++i;
+            if (sell.Qty() == 0)
+                ++j;
+        }
+        return matchedQty;
     }
 };
 

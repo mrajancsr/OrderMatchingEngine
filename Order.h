@@ -72,10 +72,10 @@ public:
     const std::string &SecurityId() const { return m_securityId; }
     const std::string &UserId() const { return m_user; }
     const std::string &Company() const { return m_company; }
-    const OrderSide &Side() const { return m_side; }
-    const double Qty() const { return m_qty; }
-    const double Price() const { return m_price; }
-    void SetQty(const unsigned int &newQty) { m_qty = newQty; }
+    const OrderSide Side() const { return m_side; }
+    double Qty() const { return m_qty; }
+    double Price() const { return m_price; }
+    void SetQty(unsigned int newQty) { m_qty = newQty; }
 
     bool operator==(const Order &otherOrder) const
     {
