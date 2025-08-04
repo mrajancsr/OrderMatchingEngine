@@ -12,7 +12,7 @@
  * - Supports Limit Orders (buy/sell)
  * - Matches orders using price-time priority
  * - Prints trade execution details
- * - Supports order cancellations and modifications (future feature)
+ * - Supports order cancellations and modifications
  *
  * @author Rajan Subramanian
  * @date March 2025
@@ -23,6 +23,9 @@
 #include <iostream>
 #include <unordered_map>
 #include <unordered_set>
+#include <set>
+#include <mutex>
+#include <optional>
 
 template <typename T>
 void displayOrders(const T &container)
@@ -46,6 +49,7 @@ public:
     virtual const std::unordered_set<Order> &getOrdersBySecurityId(const std::string &secId) const = 0;
     virtual const std::vector<Order> getOrdersByUserId(const std::string &userId) const = 0;
     virtual unsigned int getMatchingSizeForSecurity(const std::string &securityId) = 0;
+    virtual void test() = 0;
 };
 
 class OrderEngine final : public IOrderEngine
@@ -54,20 +58,19 @@ private:
     std::unordered_map<std::string, Order> m_ordersByOrderId;
     std::unordered_map<std::string, std::unordered_set<Order>> m_ordersBySecurityId;
     std::unordered_map<std::string, std::unordered_set<std::string>> m_ordersByUserId;
+    mutable std::mutex m_mutex;
 
 public:
     void addOrder(Order order) override
     {
         auto [it, inserted] = m_ordersByOrderId.emplace(order.OrderId(), std::move(order));
         if (!inserted)
-            throw ::std::runtime_error("Duplicate order detected: " + it->first);
+            throw std::runtime_error("Duplicate order detected: " + it->first);
 
         const Order &insertedOrder = it->second;
-        const std::string userId = insertedOrder.UserId();
-        const std::string orderId = insertedOrder.OrderId();
 
-        m_ordersBySecurityId[insertedOrder.SecurityId()].insert(std::move(insertedOrder));
-        m_ordersByUserId[userId].insert(orderId);
+        m_ordersBySecurityId[insertedOrder.SecurityId()].insert(insertedOrder);
+        m_ordersByUserId[insertedOrder.UserId()].insert(insertedOrder.OrderId());
     }
 
     void cancelOrder(const std::string &orderId) override
@@ -233,13 +236,9 @@ public:
         return orderCancelled;
     }
 
-    // return total qty that can match for a given securityId
     unsigned int getMatchingSizeForSecurity(const std::string &securityId) override
     {
-        auto secIt = m_ordersBySecurityId.find(securityId);
-        if (secIt == m_ordersBySecurityId.end())
-            return 0;
-        return 1;
+        return 0;
     }
 };
 
