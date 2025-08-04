@@ -241,7 +241,6 @@ public:
         std::lock_guard<std::mutex> lock(m_mutex);
 
         auto secIt = m_ordersBySecurityId.find(secId);
-
         if (secIt == m_ordersBySecurityId.end())
             return 0;
 
@@ -256,47 +255,44 @@ public:
         }
 
         std::sort(buys.begin(), buys.end(), [](const Order &a, const Order &b)
-                  { return a.Price() > b.Price(); });
+                  {
+                      return a.Price() > b.Price(); // Descending
+                  });
 
         std::sort(sells.begin(), sells.end(), [](const Order &a, const Order &b)
-                  { return a.Price() < b.Price(); });
+                  {
+                      return a.Price() < b.Price(); // Ascending
+                  });
 
         unsigned int matchedQty = 0;
-        size_t i = 0, j = 0;
 
-        while (i < buys.size() && j < sells.size())
+        // Use vectors of indices or process greedily without dropping anyone
+        for (auto &buy : buys)
         {
-            Order &buy = buys[i];
-            Order &sell = sells[j];
-
-            if (buy.Company() == sell.Company())
-            {
-                // skip matching same company name
-                // advance to which ever side is more likely match
-                if ((i + 1 < buys.size() && buys[i + 1].Company() != sell.Company()) || j + 1 == sells.size())
-                    ++i;
-                else
-                    ++j;
-                continue;
-            }
-
-            // cant match
-            /*
-            if (buy.Price() < sell.Price())
-            {
-                ++i;
-                continue;
-            }*/
-            unsigned int qty = std::min(buy.Qty(), sell.Qty());
-            matchedQty += qty;
-            buy.SetQty(buy.Qty() - qty);
-            sell.SetQty(sell.Qty() - qty);
-
             if (buy.Qty() == 0)
-                ++i;
-            if (sell.Qty() == 0)
-                ++j;
+                continue;
+
+            for (auto &sell : sells)
+            {
+                if (sell.Qty() == 0)
+                    continue;
+
+                // ✋ Skip same company match
+                if (buy.Company() == sell.Company())
+                    continue;
+
+                // ✅ Match if price-compatible
+
+                unsigned int qty = std::min(buy.Qty(), sell.Qty());
+                buy.SetQty(buy.Qty() - qty);
+                sell.SetQty(sell.Qty() - qty);
+                matchedQty += qty;
+
+                if (buy.Qty() == 0)
+                    break; // Move to next buy
+            }
         }
+
         return matchedQty;
     }
 };

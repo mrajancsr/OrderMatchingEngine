@@ -28,6 +28,14 @@ int main()
     unsigned int matchedQty = engine.getMatchingSizeForSecurity(secId);
     std::cout << "total matched qty for " << secId << " is " << matchedQty << std::endl;
 
+    secId = "SILVER";
+    matchedQty = engine.getMatchingSizeForSecurity(secId);
+    std::cout << "total matched qty for " << secId << " is " << matchedQty << std::endl;
+
+    secId = "WTI";
+    matchedQty = engine.getMatchingSizeForSecurity(secId);
+    std::cout << "total matched qty for " << secId << " is " << matchedQty << std::endl;
+
     std::cout << "Alice wants to cancel orderId 1: cancelling order..." << std::endl;
     engine.cancelOrder("ID1");
     std::cout << "After cancel:\n";
